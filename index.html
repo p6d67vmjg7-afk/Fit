@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Conta Calorie">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Conta Calorie</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: una colonna stretta da telefono, barra in basso con tre schede (Obiettivo / Diario / Consigli). */
+:root{
+  --bg:#F4F5F0; --surface:#FFFFFF; --ink:#1B221E; --muted:#5F6963; --line:#DDE1D8;
+  --accent:#2E6B4E; --accent-ink:#FFFFFF; --soft:#E3EDE5; --over:#C2432A; --over-soft:#F6E1DB;
+  --display:'Bricolage Grotesque','Avenir Next',system-ui,sans-serif;
+  --body:'Figtree',system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121815; --surface:#1B231F; --ink:#E8EEE9; --muted:#9AA79F; --line:#2B3630;
+  --accent:#6FBF94; --accent-ink:#0F1A14; --soft:#223229; --over:#EF7F64; --over-soft:#3B2420; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121815; --surface:#1B231F; --ink:#E8EEE9; --muted:#9AA79F; --line:#2B3630;
+  --accent:#6FBF94; --accent-ink:#0F1A14; --soft:#223229; --over:#EF7F64; --over-soft:#3B2420; color-scheme:dark}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px)}
+body{margin:0}
+body{background:var(--bg);color:var(--ink);font:17px/1.5 var(--body);
+  padding-block:20px 100px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:520px;margin:0 auto}
+.tab{display:flex;flex-direction:column;gap:16px}
+.tab[hidden]{display:none!important}
+h1{font:700 1.7rem/1.1 var(--display);margin:0;letter-spacing:-.01em;text-wrap:balance}
+h2{font:700 1.15rem/1.2 var(--display);margin:0}
+h3{font:700 1rem/1.2 var(--display);margin:0}
+.sub{color:var(--muted);margin:6px 0 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.step{display:flex;align-items:center;gap:10px;font:700 1.05rem var(--display)}
+.step b{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font:700 .85rem var(--body);flex:none}
+label{display:flex;flex-direction:column;gap:6px;font-size:.95rem;font-weight:600;min-width:0}
+label small{font-weight:400;color:var(--muted);font-size:.85rem}
+input,select{font:inherit;font-size:1.05rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;width:100%;min-width:0;font-weight:500}
+input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.opts{display:grid;gap:8px}
+.opt{font:600 1rem var(--body);text-align:left;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.opt span{font-weight:400;font-size:.88rem;color:var(--muted)}
+.opt[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.opt[aria-pressed="true"] span{color:var(--accent-ink);opacity:.9}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:600 .95rem var(--body);padding:9px 14px;border-radius:99px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.big{display:flex;flex-direction:column;gap:2px}
+.big .num{font:700 3.2rem/1 var(--display);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.big .unit{color:var(--muted)}
+.rows{display:flex;flex-direction:column}
+.row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.row span:first-child{color:var(--muted)}
+.note{font-size:.85rem;color:var(--muted);margin:0}
+.meter{height:20px;border-radius:10px;background:var(--soft);overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--accent);border-radius:10px;transition:width .35s ease}
+.meter.over i{background:var(--over)}
+.status{display:flex;justify-content:space-between;gap:12px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.status b{color:var(--ink)}
+.pill{display:inline-block;padding:3px 12px;border-radius:99px;background:var(--soft);color:var(--accent);font-weight:600;font-size:.9rem}
+.pill.over{background:var(--over-soft);color:var(--over)}
+.btn{font:600 1.05rem var(--body);padding:14px 16px;border-radius:12px;border:0;background:var(--accent);color:var(--accent-ink);cursor:pointer;width:100%}
+.btn.alt{background:var(--soft);color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default}
+.ghost{background:none;border:0;color:var(--muted);font:500 1.4rem var(--body);cursor:pointer;padding:2px 10px;border-radius:8px}
+.ghost:hover{color:var(--over)}
+.daynav{display:flex;align-items:center;gap:8px}
+.daynav input{text-align:center;flex:1}
+.daynav button{font:600 1.2rem var(--body);width:46px;height:46px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;flex:none}
+.results{display:flex;flex-direction:column;max-height:220px;overflow-y:auto;border:1px solid var(--line);border-radius:10px}
+.results button{display:flex;justify-content:space-between;gap:10px;text-align:left;font:500 1rem var(--body);color:var(--ink);background:var(--bg);border:0;border-top:1px solid var(--line);padding:12px;cursor:pointer}
+.results button:first-child{border-top:0}
+.results button[aria-pressed="true"]{background:var(--soft);font-weight:600}
+.results small{color:var(--muted);white-space:nowrap}
+.portions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.preview{background:var(--soft);border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.preview b{font:700 1.2rem var(--display);white-space:nowrap}
+.meal h3{margin:0 0 2px;display:flex;justify-content:space-between;color:var(--muted);font:600 .85rem var(--body);letter-spacing:.05em;text-transform:uppercase}
+.item{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.item .nm{flex:1;min-width:0;overflow-wrap:anywhere}
+.item .nm small{display:block;color:var(--muted)}
+.empty{color:var(--muted);text-align:center;padding:12px 0;margin:0}
+details>summary{cursor:pointer;font-weight:600;color:var(--accent);padding:4px 0}
+.recipe{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--bg)}
+.recipe summary{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;color:var(--ink);list-style:none}
+.recipe summary::-webkit-details-marker{display:none}
+.recipe summary span small{display:block;font-weight:400;color:var(--muted);font-size:.88rem}
+.recipe summary b{white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--accent)}
+.recipe .body{display:flex;flex-direction:column;gap:10px;padding-top:12px}
+.recipe ul,.recipe ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:3px}
+.plan{display:flex;flex-direction:column}
+.plan div{display:flex;gap:12px;padding:9px 0;border-top:1px solid var(--line)}
+.plan b{width:3.2rem;flex:none}
+.tip{display:flex;gap:12px}
+.tip::before{content:"";flex:none;width:6px;border-radius:3px;background:var(--accent);margin-block:3px}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;gap:6px;justify-content:center;
+  padding:8px max(12px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+nav button{flex:1;max-width:170px;font:600 .98rem var(--body);padding:12px 4px;border-radius:10px;border:0;background:none;color:var(--muted);cursor:pointer}
+nav button[aria-current="page"]{background:var(--soft);color:var(--accent)}
+@media (prefers-reduced-motion:reduce){.meter i{transition:none}}
+</style>
+
+</head>
+<body>
+<main>
+  <!-- ======== OBIETTIVO ======== -->
+  <section class="tab" id="tab-goal">
+    <header>
+      <h1>Quante calorie devo mangiare?</h1>
+      <p class="sub">Compila i campi e il risultato si aggiorna da solo. I numeri iniziali sono un esempio: cambiali con i tuoi.</p>
+    </header>
+
+    <div class="card">
+      <div class="step"><b>1</b>I tuoi dati</div>
+      <div class="grid">
+        <label>Peso<small>in chili</small><input id="peso" type="number" inputmode="decimal" min="30" max="300" step="0.1" value="70"></label>
+        <label>Altezza<small>in centimetri</small><input id="altezza" type="number" inputmode="numeric" min="120" max="230" value="175"></label>
+        <label>Età<small>in anni</small><input id="eta" type="number" inputmode="numeric" min="14" max="100" value="30"></label>
+        <label>Sesso<small>serve per il calcolo</small><select id="sesso"><option value="m">Uomo</option><option value="f">Donna</option></select></label>
+      </div>
+      <label>Quanto ti muovi?
+        <select id="attivita">
+          <option value="1.2">Poco: lavoro seduto, niente sport</option>
+          <option value="1.375">Un po': 1-3 allenamenti a settimana</option>
+          <option value="1.55" selected>Abbastanza: 3-5 allenamenti a settimana</option>
+          <option value="1.725">Molto: 6-7 allenamenti a settimana</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="card">
+      <div class="step"><b>2</b>Cosa vuoi fare?</div>
+      <div class="opts" id="goalSeg">
+        <button type="button" class="opt" data-g="-500" aria-pressed="false">Perdere peso<span>Mangi meno di quello che consumi</span></button>
+        <button type="button" class="opt" data-g="0" aria-pressed="true">Stare in forma<span>Mantieni il peso che hai</span></button>
+        <button type="button" class="opt" data-g="300" aria-pressed="false">Prendere peso<span>Mangi un po' più di quello che consumi</span></button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="big"><span class="unit" id="goalLabel">Ogni giorno dovresti mangiare circa</span><span class="num" id="target">0</span><span class="unit">calorie (kcal)</span></div>
+      <button class="btn" id="toDiary" type="button">Inizia a segnare i cibi</button>
+      <details>
+        <summary>Come è stato calcolato</summary>
+        <div class="rows" style="margin-top:8px">
+          <div class="row"><span>Calorie a riposo</span><b id="bmr">0</b></div>
+          <div class="row"><span>Calorie che consumi in un giorno</span><b id="tdee">0</b></div>
+          <div class="row"><span>Il tuo BMI</span><b id="bmi">0</b></div>
+        </div>
+        <p class="note" style="margin-top:8px">È una stima (formula di Mifflin-St Jeor). Per dimagrire tolgo 500 kcal a quelle che consumi, per prendere peso ne aggiungo 300. Non sostituisce il parere di un medico o di un nutrizionista.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ======== DIARIO ======== -->
+  <section class="tab" id="tab-diary" hidden>
+    <header><h1>Cosa hai mangiato</h1></header>
+
+    <div class="daynav">
+      <button type="button" id="prev" aria-label="Giorno precedente">‹</button>
+      <input type="date" id="date" aria-label="Data">
+      <button type="button" id="next" aria-label="Giorno successivo">›</button>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px">
+        <div class="big"><span class="num" id="eaten">0</span><span class="unit">calorie mangiate</span></div>
+        <span class="pill" id="leftPill">0 rimaste</span>
+      </div>
+      <div class="meter" id="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Calorie di oggi"><i id="fill"></i></div>
+      <div class="status"><span>Obiettivo: <b id="tgt2">0</b> kcal</span><span id="pct">0%</span></div>
+    </div>
+
+    <div class="card">
+      <h2>Aggiungi un cibo</h2>
+      <div class="step"><b>1</b>Quale pasto?</div>
+      <div class="chips" id="mealChips">
+        <button type="button" class="chip" data-m="Colazione" aria-pressed="false">Colazione</button>
+        <button type="button" class="chip" data-m="Pranzo" aria-pressed="false">Pranzo</button>
+        <button type="button" class="chip" data-m="Cena" aria-pressed="false">Cena</button>
+        <button type="button" class="chip" data-m="Spuntino" aria-pressed="false">Spuntino</button>
+      </div>
+      <div class="step"><b>2</b>Cerca e tocca il cibo</div>
+      <input id="q" type="search" placeholder="Scrivi qui: pasta, mela, pizza…" autocomplete="off" aria-label="Cerca un cibo">
+      <div class="results" id="results"></div>
+      <div class="step"><b>3</b>Quanto ne hai mangiato?</div>
+      <div class="portions" id="portions">
+        <button type="button" class="chip" data-p="0.5">Metà</button>
+        <button type="button" class="chip" data-p="1" aria-pressed="true">1 porzione</button>
+        <button type="button" class="chip" data-p="2">2 porzioni</button>
+      </div>
+      <label>Oppure scrivi i grammi<input id="grams" type="number" inputmode="numeric" min="1" value="100"></label>
+      <div class="preview"><span id="selName">Scegli un cibo dall'elenco</span><b id="selKcal"></b></div>
+      <button class="btn" id="add" type="button" disabled>Aggiungi al diario</button>
+
+      <details>
+        <summary>Non lo trovi? Scrivi tu le calorie</summary>
+        <div class="grid" style="margin-top:12px">
+          <label>Nome<input id="cName" type="text" placeholder="Es. tiramisù"></label>
+          <label>Calorie (kcal)<input id="cKcal" type="number" inputmode="numeric" min="1" placeholder="Es. 350"></label>
+        </div>
+        <button class="btn alt" id="addCustom" type="button" style="margin-top:12px">Aggiungi a mano</button>
+      </details>
+    </div>
+
+    <div class="card" id="log"></div>
+  </section>
+
+  <!-- ======== CONSIGLI ======== -->
+  <section class="tab" id="tab-tips" hidden>
+    <header>
+      <h1>Consigli fit</h1>
+      <p class="sub" id="tipsSub">Idee per mangiare bene e muoverti.</p>
+    </header>
+
+    <div class="card">
+      <h2>Ricette semplici</h2>
+      <p class="note">Le calorie sono per una porzione. Tocca una ricetta per vedere come si fa.</p>
+      <div class="chips" id="recFilter">
+        <button type="button" class="chip" data-f="Tutte" aria-pressed="true">Tutte</button>
+        <button type="button" class="chip" data-f="Colazione" aria-pressed="false">Colazione</button>
+        <button type="button" class="chip" data-f="Pranzo" aria-pressed="false">Pranzo</button>
+        <button type="button" class="chip" data-f="Cena" aria-pressed="false">Cena</button>
+        <button type="button" class="chip" data-f="Spuntino" aria-pressed="false">Spuntino</button>
+      </div>
+      <div id="recipes" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+
+    <div class="card">
+      <h2>Allenamento</h2>
+      <p id="trainIntro" style="margin:0"></p>
+      <div class="plan" id="plan"></div>
+      <p class="note">Se hai problemi di salute o non ti alleni da tempo, parlane prima con il medico. Inizia piano e aumenta ogni settimana.</p>
+    </div>
+
+    <div class="card">
+      <h2>Buone abitudini</h2>
+      <div id="habits" style="display:flex;flex-direction:column;gap:12px"></div>
+    </div>
+  </section>
+</main>
+
+<nav aria-label="Sezioni">
+  <button type="button" id="navGoal" aria-current="page">Obiettivo</button>
+  <button type="button" id="navDiary">Diario</button>
+  <button type="button" id="navTips">Consigli</button>
+</nav>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+  function fmt(n){return Math.round(n).toLocaleString("it-IT")}
+
+  // Alimenti: nome, kcal ogni 100 g, porzione tipica in g
+  var FOODS=[
+    ["Pasta (cotta)",158,180],["Pasta (cruda)",350,80],["Riso (cotto)",130,180],["Riso (crudo)",350,80],["Pane",270,50],["Pane integrale",250,50],
+    ["Fette biscottate",410,30],["Cornflakes",375,30],["Biscotti secchi",430,30],["Cornetto",400,60],["Pizza margherita",270,300],["Gnocchi",150,200],
+    ["Patate (lesse)",85,200],["Patatine fritte",312,120],["Petto di pollo",110,150],["Pollo (coscia con pelle)",200,150],["Manzo (magro)",150,150],
+    ["Maiale (lonza)",150,150],["Prosciutto cotto",215,50],["Prosciutto crudo",250,50],["Bresaola",150,50],["Salmone",200,150],["Tonno al naturale",110,80],
+    ["Tonno sott'olio",190,80],["Merluzzo",82,150],["Uova",143,60],["Mozzarella",250,100],["Parmigiano",390,20],["Ricotta",150,100],
+    ["Yogurt bianco",60,125],["Yogurt greco",95,150],["Latte intero",64,200],["Latte parzialmente scremato",46,200],["Formaggio spalmabile",260,30],
+    ["Mela",52,180],["Banana",89,120],["Arancia",47,200],["Pera",57,180],["Fragole",33,150],["Uva",70,150],
+    ["Insalata",15,80],["Pomodori",18,150],["Zucchine",17,200],["Spinaci",23,150],["Broccoli",34,200],["Carote",41,100],["Lenticchie (cotte)",116,150],
+    ["Ceci (cotti)",164,150],["Fagioli (cotti)",110,150],["Olio d'oliva",884,10],["Burro",740,10],["Mandorle",575,30],["Noci",654,30],
+    ["Nutella",540,20],["Marmellata",250,20],["Miele",304,15],["Zucchero",390,5],["Cioccolato fondente",540,20],["Gelato",200,100],
+    ["Birra",43,330],["Vino rosso",85,150],["Cola",42,330],["Succo di frutta",46,200],["Cappuccino",45,150],["Caffè",2,30],["Proteine in polvere",380,30],["Fiocchi d'avena",370,40]
+  ];
+
+  // Ricette: nome, pasto, kcal a porzione, minuti, ingredienti, passaggi
+  var RECIPES=[
+    {n:"Porridge di avena e banana",m:"Colazione",k:340,t:10,i:["40 g fiocchi d'avena","200 ml latte","1 banana","1 cucchiaino di miele","cannella"],s:["Scalda latte e avena per 5 minuti mescolando.","Taglia la banana a rondelle e mettila sopra.","Finisci con miele e cannella."]},
+    {n:"Yogurt greco, frutta e noci",m:"Colazione",k:300,t:3,i:["150 g yogurt greco","100 g frutti di bosco o fragole","15 g noci","1 cucchiaino di miele"],s:["Metti lo yogurt in una ciotola.","Aggiungi frutta, noci spezzettate e miele."]},
+    {n:"Toast integrale con uovo e avocado",m:"Colazione",k:380,t:10,i:["2 fette di pane integrale","1 uovo","1/2 avocado","sale e pepe"],s:["Tosta il pane.","Cuoci l'uovo in padella con poco olio o in camicia.","Schiaccia l'avocado sul pane, metti l'uovo, sale e pepe."]},
+    {n:"Pasta integrale tonno e pomodorini",m:"Pranzo",k:480,t:15,i:["80 g pasta integrale","80 g tonno al naturale","150 g pomodorini","1 cucchiaino di olio","basilico"],s:["Cuoci la pasta.","Scalda i pomodorini in padella con l'olio per 5 minuti.","Unisci tonno e pasta, mescola e aggiungi il basilico."]},
+    {n:"Insalata di pollo e ceci",m:"Pranzo",k:420,t:15,i:["120 g petto di pollo","100 g ceci cotti","insalata e pomodori","1 cucchiaio di olio","limone"],s:["Cuoci il pollo in padella e taglialo a strisce.","Mescola con ceci, insalata e pomodori.","Condisci con olio e limone."]},
+    {n:"Riso con verdure e uovo",m:"Pranzo",k:450,t:20,i:["70 g riso","200 g zucchine e carote","1 uovo","1 cucchiaino di olio","salsa di soia"],s:["Cuoci il riso.","Salta le verdure a dadini in padella con l'olio.","Aggiungi riso e uovo, mescola finché l'uovo si rapprende."]},
+    {n:"Salmone al forno con zucchine",m:"Cena",k:430,t:25,i:["150 g salmone","250 g zucchine","1 cucchiaino di olio","limone, sale, pepe"],s:["Scalda il forno a 200 °C.","Metti salmone e zucchine a fette in una teglia con olio e limone.","Cuoci 15-18 minuti."]},
+    {n:"Frittata di zucchine con insalata",m:"Cena",k:320,t:15,i:["2 uova","150 g zucchine","insalata","1 cucchiaino di olio","parmigiano 10 g"],s:["Taglia le zucchine a rondelle e cuocile 5 minuti.","Versa le uova sbattute con il parmigiano.","Cuoci 3 minuti per lato e servi con l'insalata."]},
+    {n:"Pollo al limone con patate",m:"Cena",k:450,t:30,i:["150 g petto di pollo","200 g patate","1 limone","rosmarino","1 cucchiaino di olio"],s:["Taglia le patate a cubetti e cuocile in forno a 200 °C per 15 minuti.","Aggiungi il pollo a pezzi, limone e rosmarino.","Cuoci altri 12-15 minuti."]},
+    {n:"Zuppa di lenticchie",m:"Cena",k:350,t:30,i:["150 g lenticchie cotte","1 carota","1 costa di sedano","passata di pomodoro","1 cucchiaino di olio"],s:["Soffriggi carota e sedano tritati nell'olio.","Aggiungi passata, lenticchie e un po' d'acqua.","Cuoci 15 minuti."]},
+    {n:"Mela e mandorle",m:"Spuntino",k:200,t:2,i:["1 mela","15 g mandorle"],s:["Taglia la mela a spicchi e mangiala con le mandorle."]},
+    {n:"Frullato di banana e yogurt",m:"Spuntino",k:260,t:3,i:["1 banana","125 g yogurt bianco","150 ml latte","1 cucchiaino di miele"],s:["Frulla tutto fino a ottenere una crema."]},
+    {n:"Hummus con carote",m:"Spuntino",k:180,t:10,i:["100 g ceci cotti","1 cucchiaio di olio","succo di 1/2 limone","1 spicchio d'aglio","2 carote"],s:["Frulla ceci, olio, limone e aglio con un po' d'acqua.","Mangia l'hummus con le carote a bastoncini."]}
+  ];
+
+  var TRAIN={
+    "-500":{
+      intro:"Per dimagrire servono movimento tutti i giorni e un po' di forza per mantenere i muscoli.",
+      plan:[["Lun","Forza a corpo libero, 30 minuti"],["Mar","Camminata veloce, 40 minuti"],["Mer","Forza a corpo libero, 30 minuti"],["Gio","Camminata veloce, 40 minuti"],["Ven","Forza a corpo libero, 30 minuti"],["Sab","Bici, corsa leggera o nuoto, 45 minuti"],["Dom","Riposo o passeggiata"]],
+      habits:["Punta a 8.000-10.000 passi al giorno.","Mangia proteine a ogni pasto: ti saziano e proteggono i muscoli.","Non servono diete drastiche: perdere circa mezzo chilo a settimana è un buon ritmo."]
+    },
+    "0":{
+      intro:"Per stare in forma alterna forza e movimento che ti piace, così è facile andare avanti.",
+      plan:[["Lun","Forza a corpo libero o pesi, 40 minuti"],["Mar","Corsa leggera o bici, 30 minuti"],["Mer","Riposo o stretching"],["Gio","Forza a corpo libero o pesi, 40 minuti"],["Ven","Nuoto, corsa o sport di squadra"],["Sab","Camminata lunga o escursione"],["Dom","Riposo"]],
+      habits:["Muoviti almeno 150 minuti a settimana.","Metti verdura in due pasti su tre.","Se un giorno esageri, torna alle tue abitudini il giorno dopo."]
+    },
+    "300":{
+      intro:"Per mettere massa servono allenamenti di forza regolari, più calorie e tanto riposo.",
+      plan:[["Lun","Forza: petto, spalle, tricipiti"],["Mar","Forza: schiena e bicipiti"],["Mer","Riposo o camminata"],["Gio","Forza: gambe e addome"],["Ven","Forza: tutto il corpo"],["Sab","Camminata leggera o stretching"],["Dom","Riposo"]],
+      habits:["Aumenta pesi o ripetizioni un po' alla volta, ogni settimana.","Aggiungi calorie con cibi sani: olio d'oliva, frutta secca, pasta, riso, latte.","Dormi 7-9 ore: i muscoli crescono mentre riposi."]
+    }
+  };
+
+  var KEY="contacalorie.v1";
+  var state={profile:{peso:70,altezza:175,eta:30,sesso:"m",attivita:"1.55",goal:0},days:{}};
+  try{var s=JSON.parse(localStorage.getItem(KEY)||"null");if(s&&s.profile){state=s;state.days=state.days||{}}}catch(e){}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+  function iso(d){var m=d.getMonth()+1,dd=d.getDate();return d.getFullYear()+"-"+(m<10?"0":"")+m+"-"+(dd<10?"0":"")+dd}
+  var day=iso(new Date());
+  var picked=null,portion=1;
+  var h=new Date().getHours();
+  var meal=h<10?"Colazione":h<15?"Pranzo":h<18?"Spuntino":"Cena";
+
+  // ---------- obiettivo ----------
+  var P=state.profile;
+  $("peso").value=P.peso;$("altezza").value=P.altezza;$("eta").value=P.eta;$("sesso").value=P.sesso;$("attivita").value=P.attivita;
+
+  function calc(){
+    var w=+$("peso").value,hh=+$("altezza").value,a=+$("eta").value,m=$("sesso").value==="m";
+    if(!(w>0&&hh>0&&a>0))return null;
+    var bmr=10*w+6.25*hh-5*a+(m?5:-161);
+    var tdee=bmr*parseFloat($("attivita").value);
+    return{bmr:Math.round(bmr),tdee:Math.round(tdee),target:Math.max(1200,Math.round((tdee+P.goal)/10)*10),bmi:w/Math.pow(hh/100,2),w:w};
+  }
+  var GL={"-500":"Per perdere peso mangia circa","0":"Per stare in forma mangia circa","300":"Per prendere peso mangia circa"};
+  function renderGoal(){
+    P.peso=+$("peso").value;P.altezza=+$("altezza").value;P.eta=+$("eta").value;P.sesso=$("sesso").value;P.attivita=$("attivita").value;
+    var c=calc();
+    document.querySelectorAll("#goalSeg button").forEach(function(b){b.setAttribute("aria-pressed",String(+b.dataset.g===P.goal))});
+    $("goalLabel").textContent=GL[String(P.goal)];
+    if(c){
+      $("target").textContent=fmt(c.target);$("bmr").textContent=fmt(c.bmr)+" kcal";$("tdee").textContent=fmt(c.tdee)+" kcal";
+      var b=c.bmi,cat=b<18.5?"sottopeso":b<25?"normopeso":b<30?"sovrappeso":"obesità";
+      $("bmi").textContent=b.toFixed(1).replace(".",",")+" ("+cat+")";
+    }else{$("target").textContent="–";$("bmr").textContent=$("tdee").textContent=$("bmi").textContent="–"}
+    save();renderDiary();renderTips();
+  }
+  ["peso","altezza","eta","sesso","attivita"].forEach(function(id){$(id).addEventListener("input",renderGoal)});
+  document.querySelectorAll("#goalSeg button").forEach(function(b){b.addEventListener("click",function(){P.goal=+b.dataset.g;renderGoal()})});
+
+  // ---------- diario ----------
+  function entries(){return state.days[day]||(state.days[day]=[])}
+  function renderDiary(){
+    var c=calc(),target=c?c.target:0;
+    var list=state.days[day]||[];
+    var tot=list.reduce(function(s,e){return s+e.kcal},0);
+    var left=target-tot,over=left<0;
+    $("eaten").textContent=fmt(tot);$("tgt2").textContent=target?fmt(target):"–";
+    var pct=target?Math.round(tot/target*100):0;
+    $("pct").textContent=pct+"%";$("fill").style.width=Math.min(100,pct)+"%";
+    $("meter").classList.toggle("over",over);$("meter").setAttribute("aria-valuenow",Math.min(100,pct));
+    var pill=$("leftPill");pill.classList.toggle("over",over);
+    pill.textContent=over?"Ne hai "+fmt(-left)+" di troppo":"Te ne restano "+fmt(left);
+    var html="";
+    ["Colazione","Pranzo","Cena","Spuntino"].forEach(function(m){
+      var items=list.filter(function(e){return e.meal===m});if(!items.length)return;
+      var sub=items.reduce(function(s,e){return s+e.kcal},0);
+      html+='<div class="meal"><h3><span>'+m+'</span><span>'+fmt(sub)+' kcal</span></h3>';
+      items.forEach(function(e){
+        html+='<div class="item"><div class="nm">'+esc(e.name)+(e.g?'<small>'+e.g+' g</small>':'')+'</div><b>'+fmt(e.kcal)+'</b><button class="ghost" data-id="'+e.id+'" aria-label="Elimina '+esc(e.name)+'">×</button></div>';
+      });
+      html+='</div>';
+    });
+    $("log").innerHTML=html||'<p class="empty">Non hai ancora aggiunto niente.<br>Scegli un pasto e cerca un cibo qui sopra.</p>';
+    $("date").value=day;
+    document.querySelectorAll("#mealChips button").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.m===meal))});
+  }
+  $("log").addEventListener("click",function(ev){
+    var b=ev.target.closest("button[data-id]");if(!b)return;
+    state.days[day]=entries().filter(function(e){return String(e.id)!==b.dataset.id});save();renderDiary();
+  });
+  $("mealChips").addEventListener("click",function(ev){var b=ev.target.closest("button");if(!b)return;meal=b.dataset.m;renderDiary()});
+
+  function renderResults(){
+    var q=$("q").value.trim().toLowerCase();
+    var res=FOODS.filter(function(f){return !q||f[0].toLowerCase().indexOf(q)>-1}).slice(0,40);
+    $("results").innerHTML=res.length?res.map(function(f){
+      return '<button type="button" data-n="'+esc(f[0])+'" aria-pressed="'+(!!picked&&picked[0]===f[0])+'"><span>'+esc(f[0])+'</span><small>'+f[1]+' kcal ogni 100 g</small></button>';
+    }).join(""):'<p class="empty">Nessun risultato. Scrivi tu le calorie qui sotto.</p>';
+  }
+  $("q").addEventListener("input",renderResults);
+  $("results").addEventListener("click",function(ev){
+    var b=ev.target.closest("button[data-n]");if(!b)return;
+    picked=FOODS.filter(function(f){return f[0]===b.dataset.n})[0];
+    portion=1;$("grams").value=picked[2];renderResults();renderPick();
+  });
+  $("portions").addEventListener("click",function(ev){
+    var b=ev.target.closest("button");if(!b||!picked)return;
+    portion=+b.dataset.p;$("grams").value=Math.round(picked[2]*portion);renderPick();
+  });
+  $("grams").addEventListener("input",function(){portion=0;renderPick()});
+  function renderPick(){
+    var g=+$("grams").value;
+    document.querySelectorAll("#portions button").forEach(function(b){b.setAttribute("aria-pressed",String(portion>0&&+b.dataset.p===portion))});
+    if(!picked){$("selName").textContent="Scegli un cibo dall'elenco";$("selKcal").textContent="";$("add").disabled=true;return}
+    $("selName").textContent=picked[0]+" · 1 porzione = "+picked[2]+" g";
+    $("selKcal").textContent=g>0?fmt(picked[1]*g/100)+" kcal":"";
+    $("add").disabled=!(g>0);
+  }
+  function newId(){return Date.now()+Math.floor(Math.random()*1000)}
+  $("add").addEventListener("click",function(){
+    var g=+$("grams").value;if(!picked||!(g>0))return;
+    entries().push({id:newId(),name:picked[0],g:g,kcal:Math.round(picked[1]*g/100),meal:meal});
+    save();renderDiary();
+  });
+  $("addCustom").addEventListener("click",function(){
+    var n=$("cName").value.trim(),k=+$("cKcal").value;if(!n||!(k>0))return;
+    entries().push({id:newId(),name:n,g:0,kcal:Math.round(k),meal:meal});
+    $("cName").value="";$("cKcal").value="";save();renderDiary();
+  });
+  function shift(n){var d=new Date(day+"T12:00:00");d.setDate(d.getDate()+n);day=iso(d);renderDiary()}
+  $("prev").addEventListener("click",function(){shift(-1)});
+  $("next").addEventListener("click",function(){shift(1)});
+  $("date").addEventListener("change",function(){if($("date").value){day=$("date").value;renderDiary()}});
+
+  // ---------- consigli ----------
+  var filter="Tutte";
+  function renderTips(){
+    var T=TRAIN[String(P.goal)],c=calc();
+    $("tipsSub").textContent=P.goal<0?"Consigli per perdere peso.":P.goal>0?"Consigli per prendere peso.":"Consigli per stare in forma.";
+    var list=RECIPES.filter(function(r){return filter==="Tutte"||r.m===filter});
+    $("recipes").innerHTML=list.map(function(r,ix){
+      return '<details class="recipe"><summary><span>'+esc(r.n)+'<small>'+r.m+' · '+r.t+' minuti</small></span><b>'+r.k+' kcal</b></summary><div class="body">'+
+        '<div><h3>Ingredienti</h3><ul>'+r.i.map(function(x){return'<li>'+esc(x)+'</li>'}).join("")+'</ul></div>'+
+        '<div><h3>Come si fa</h3><ol>'+r.s.map(function(x){return'<li>'+esc(x)+'</li>'}).join("")+'</ol></div>'+
+        '<button type="button" class="btn alt" data-r="'+RECIPES.indexOf(r)+'">Aggiungi al diario ('+r.m.toLowerCase()+')</button></div></details>';
+    }).join("");
+    $("trainIntro").textContent=T.intro;
+    $("plan").innerHTML=T.plan.map(function(p){return'<div><b>'+p[0]+'</b><span>'+esc(p[1])+'</span></div>'}).join("");
+    var hab=T.habits.slice();
+    if(c){var lo=Math.round(c.w*1.4),hi=Math.round(c.w*1.8);hab.push("Proteine consigliate per te: circa "+lo+"-"+hi+" g al giorno (carne, pesce, uova, latticini, legumi).")}
+    hab.push("Bevi acqua durante la giornata, circa 1,5-2 litri.");
+    $("habits").innerHTML=hab.map(function(t){return'<div class="tip"><span>'+esc(t)+'</span></div>'}).join("");
+  }
+  $("recFilter").addEventListener("click",function(ev){
+    var b=ev.target.closest("button");if(!b)return;filter=b.dataset.f;
+    document.querySelectorAll("#recFilter button").forEach(function(x){x.setAttribute("aria-pressed",String(x===b))});renderTips();
+  });
+  $("recipes").addEventListener("click",function(ev){
+    var b=ev.target.closest("button[data-r]");if(!b)return;
+    var r=RECIPES[+b.dataset.r];
+    entries().push({id:newId(),name:r.n,g:0,kcal:r.k,meal:r.m});save();renderDiary();
+    b.textContent="Aggiunto al diario ✓";b.disabled=true;
+  });
+
+  // ---------- schede ----------
+  function show(w){
+    ["goal","diary","tips"].forEach(function(t){
+      $("tab-"+t).hidden=t!==w;
+      $("nav"+t.charAt(0).toUpperCase()+t.slice(1)).setAttribute("aria-current",t===w?"page":"false");
+    });
+    window.scrollTo(0,0);
+  }
+  $("navGoal").addEventListener("click",function(){show("goal")});
+  $("navDiary").addEventListener("click",function(){show("diary")});
+  $("navTips").addEventListener("click",function(){show("tips")});
+  $("toDiary").addEventListener("click",function(){show("diary")});
+
+  renderResults();renderPick();renderGoal();
+})();
+</script>
+</body>
+</html>
